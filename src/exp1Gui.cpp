@@ -53,6 +53,18 @@ void MySleep(unsigned long p_uMillisecs)
     usleep(p_uMillisecs * 1000);
 }
 
+/*
+void checkOptoforceArray(){
+    int threshold_size = 100;
+    if(opto_data_raw[3]){
+        if(opto_data_raw[sensornr].size() == threshold_size){
+
+        }
+
+    }
+}
+*/
+
 
 void getPoints(int sensornr, float opto_lst[3]){
     printf("----------------------------------Getpoints-------------------------------------------------------\n");
@@ -91,6 +103,8 @@ void optoforceCallback0(const geometry_msgs::WrenchStamped::ConstPtr& msg)
       printf("y0: %f\n", msg->wrench.force.y);
       printf("z0: %f\n", msg->wrench.force.z);*/
 }
+
+
 
 void optoforceCallback1(const geometry_msgs::WrenchStamped::ConstPtr& msg)
 {
@@ -131,22 +145,20 @@ void optoforceCallback3(const geometry_msgs::WrenchStamped::ConstPtr& msg)
     printf("x: %f\n", msg->wrench.force.x);
     printf("y: %f\n", msg->wrench.force.y);
     printf("z: %f\n", msg->wrench.force.z);*/
-
 }
 
 int main(int argc, char **argv){
-
+    int inputChar;
     ros::init(argc, argv, "exp1Gui");
     ros::NodeHandle n;
     ros::Subscriber optoforce0 = n.subscribe("optoforce_0", 1000, optoforceCallback0);
     ros::Subscriber optoforce1 = n.subscribe("optoforce_1", 1000, optoforceCallback1);
     ros::Subscriber optoforce2 = n.subscribe("optoforce_2", 1000, optoforceCallback2);
     ros::Subscriber optoforce3 = n.subscribe("optoforce_3", 1000, optoforceCallback3);
-    
+
     ros::AsyncSpinner spinner(2);
     spinner.start();
-    
-    int inputChar;
+    printf("Start trening");
     do {
         printf("1 - Optoforce\n"
                "0 - Exit\n> ");
@@ -159,9 +171,7 @@ int main(int argc, char **argv){
         switch(inputChar){
         case '1':
         {
-            printf("Start trening");
 
-            
         }
         break;
         
