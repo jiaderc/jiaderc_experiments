@@ -66,6 +66,11 @@ void findMax(){
         }
     }
     std::cout << "Max" << max << "\n";
+    if(max > 3){
+        for (i = 0; i < threshold_size; i++){
+            std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
+        }
+    }
 }
 
 void clearVectorArray(){
