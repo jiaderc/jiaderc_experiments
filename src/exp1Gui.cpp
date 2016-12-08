@@ -47,46 +47,55 @@
 //int currentIndividual;
 
 
-std::vector<std::vector<float> > opto_data_raw[4];
+std::vector<std::vector<float>> opto_data_raw[4];
+int threshold_size = 100;
+float sum = 0;
 void MySleep(unsigned long p_uMillisecs)
 {
     usleep(p_uMillisecs * 1000);
 }
 
-/*
-void checkOptoforceArray(){
-    int threshold_size = 100;
-    if(opto_data_raw[3]){
-        if(opto_data_raw[sensornr].size() == threshold_size){
-
-        }
-
+void clearVectorArray(){
+    int i;
+    for(i=0;i<4;i++){
+        opto_data_raw[i].clear();
     }
 }
-*/
+
+void checkOptoforceArray(){
+    if(opto_data_raw[0].size() == threshold_size){
+        printf("!!!!!!!!!!Beregn!!!!!!!!!!");
+        std::cout << "Average" << (sum/threshold_size) << "\n";
+        clearVectorArray();
+        sum = 0;
+    }
+}
 
 
 void getPoints(int sensornr, float opto_lst[3]){
-    printf("----------------------------------Getpoints-------------------------------------------------------\n");
+    //  printf("-------------------------Getpoints----------------------------------\n");
     std::vector<float> tmp;
     tmp.push_back(opto_lst[0]);
     tmp.push_back(opto_lst[1]);
     tmp.push_back(opto_lst[2]);
-    
+
+/*
     printf("x: %f\n", opto_lst[0]);
     printf("y: %f\n", opto_lst[1]);
     printf("z: %f\n", opto_lst[2]);
-
+*/
     opto_data_raw[sensornr].push_back(tmp);
-    std::cout << "Sensor" << sensornr << "\n"; 
+/*
+    std::cout << "Sensor" << sensornr << "\n";
     std::cout << "first " << (sizeof opto_data_raw/ sizeof opto_data_raw[0]) << "\n";
     std::cout << "second " << opto_data_raw[sensornr].size() << "\n";
     std::cout << "third" << opto_data_raw[sensornr][0].size() << "\n";
-    
+
     std::cout << "x:" << opto_data_raw[sensornr][0][0] << "\n";
     std::cout << "y:" << opto_data_raw[sensornr][0][1] << "\n";
     std::cout << "z:" << opto_data_raw[sensornr][0][2] << "\n";
-//    std::cout << "vector: " << opto_0[0][0] << "\n";
+*/
+    checkOptoforceArray();
 }
 
 //const std_msgs::String::ConstPtr&
@@ -96,7 +105,9 @@ void optoforceCallback0(const geometry_msgs::WrenchStamped::ConstPtr& msg)
     optoforce_lst[0] = msg->wrench.force.x;
     optoforce_lst[1] = msg->wrench.force.y;
     optoforce_lst[2] = msg->wrench.force.z;
+    sum = sum+msg->wrench.force.z;
     getPoints(0,optoforce_lst);
+
 /*    
       printf("Sensor 0\n");
       printf("x0: %f\n", msg->wrench.force.x);
