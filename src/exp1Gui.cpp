@@ -50,9 +50,22 @@
 std::vector<std::vector<float>> opto_data_raw[4];
 int threshold_size = 100;
 float sum = 0;
+
+
 void MySleep(unsigned long p_uMillisecs)
 {
     usleep(p_uMillisecs * 1000);
+}
+
+void findMax(){
+    float max = opto_data_raw[0][0][2];
+    int i;
+    for (i = 0; i < threshold_size; i++){
+        if(opto_data_raw[0][i][2] > max){
+            max = opto_data_raw[0][i][2];
+        }
+    }
+    std::cout << "Max" << max << "\n";
 }
 
 void clearVectorArray(){
@@ -66,6 +79,7 @@ void checkOptoforceArray(){
     if(opto_data_raw[0].size() == threshold_size){
         printf("!!!!!!!!!!Beregn!!!!!!!!!!");
         std::cout << "Average" << (sum/threshold_size) << "\n";
+        findMax();
         clearVectorArray();
         sum = 0;
     }
@@ -84,7 +98,9 @@ void getPoints(int sensornr, float opto_lst[3]){
     printf("y: %f\n", opto_lst[1]);
     printf("z: %f\n", opto_lst[2]);
 */
+
     opto_data_raw[sensornr].push_back(tmp);
+
 /*
     std::cout << "Sensor" << sensornr << "\n";
     std::cout << "first " << (sizeof opto_data_raw/ sizeof opto_data_raw[0]) << "\n";
