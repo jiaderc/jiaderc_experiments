@@ -10,8 +10,11 @@
 
 
 std::vector<std::vector<float>> opto_data_raw[4];
+std::vector<std::vector<float>> extracted_data[4];
 int threshold_size = 15;
 int total_sensors = 4;
+int extract_data = 0;
+int allNegative = 0;
 float sum = 0;
 
 
@@ -21,7 +24,7 @@ void MySleep(unsigned long p_uMillisecs){
 
 
 
-void findMax(){
+float getMax(){
     float max = opto_data_raw[0][0][2];
     int i;
     for (i = 0; i < threshold_size; i++){
@@ -29,12 +32,14 @@ void findMax(){
             max = opto_data_raw[0][i][2];
         }
     }
-    std::cout << "Max" << max << "\n";
-   /* if(max > 3){
-        for (i = 0; i < threshold_size; i++){
-//            std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
-        }
-    }*/
+
+    //std::cout << "Max" << max << "\n";
+    /* if(max > 3){
+         for (i = 0; i < threshold_size; i++){
+ //          std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
+         }
+     } */
+    return max;
 }
 
 void clearVectorArray(){
@@ -44,56 +49,70 @@ void clearVectorArray(){
     }
 }
 
-int checkStability(float prev, float current){
-    float boundary = 0.5;
-    if(fabs(prev-current) < boundary){
+int bothNegative(float prev, float current){
+    if(prev<0 && current < 0){
         return 1;
     }
     return 0;
 }
 
+//int checkStability(float prev, float current, int i){
+int checkStability(int i){
+    float boundary = 0.02;
+    float prev = opto_data_raw[0][i][2];
+    int stabilityCount = 0;
+    int j;
+
+    for (j=i+1; j<threshold_size; j++) {
+        float current = opto_data_raw[0][j][2];
+        if (fabs(prev - current) < boundary) {
+            stabilityCount = stabilityCount+1;
+        }
+        else{
+            return stabilityCount;
+        }
+    }
+    return stabilityCount;
+}
+
 //x = 0, y = 1, z = 2
 void isOnGround(){
     if(opto_data_raw[0].size() == threshold_size){
-        std::cout << "Average" << (sum/threshold_size) << "\n";
+
         int i;
         float prev = opto_data_raw[0][0][2];
-        int stable = 1;
-        for (i=1; i<threshold_size; i++){
+        int saveData = 0;
+        int sjekk = 0;
+        for (i=1; i<threshold_size; i++) {
             float current = opto_data_raw[0][i][2];
-            if(checkStability(prev,current)){
-                //OK
-            }else{
-                stable = 0;
-                //std::cout << "Not stable HAHA" << "\n";
+            int longestStability = 5;
+            if (bothNegative(prev, current)) {
+                if ( (sjekk=checkStability(i)) > longestStability) {
+                    saveData = 1;
+                    break;
+                }
+                else if(i > longestStability){
+                    break;
+                }
             }
         }
-        if(stable){
-            std::cout << "It is stable" << "\n";
-        }
-        else{
-            std::cout << "It is not stable" << "\n";
+        float max = getMax();
+        if(saveData){
+            std::cout << "Innsamling av data" << "\n";
+            std::cout << "Average: " << (sum/threshold_size) << "\n";
+            std::cout << "Max: " << max << "\n";
+            std::cout << "Sequence: " << sjekk << "\n";
+
             for (i = 0; i < threshold_size; i++){
                 std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
-            }
+
+            }std::cout << "\n";
         }
-        findMax();
         clearVectorArray();
         sum = 0;
     }
 }
 
-
-void isOnGround2(){
-    int i;
-    float prev = opto_data_raw[0][0][3];
-
-    for (i=1; i<threshold_size; i++){
-        float current = opto_data_raw[0][i][3];
-        checkStability(prev,current);
-
-    }
-}
 
 
 void getPoints(int sensornr, float opto_lst[3]){
@@ -101,7 +120,6 @@ void getPoints(int sensornr, float opto_lst[3]){
     tmp.push_back(opto_lst[0]);
     tmp.push_back(opto_lst[1]);
     tmp.push_back(opto_lst[2]);
-
     opto_data_raw[sensornr].push_back(tmp);
 
 /*
@@ -115,7 +133,6 @@ void getPoints(int sensornr, float opto_lst[3]){
     std::cout << "z:" << opto_data_raw[sensornr][0][2] << "\n";
 */
     isOnGround();
-    //checkOptoforceArray();
 }
 
 void optoforceCallback0(const geometry_msgs::WrenchStamped::ConstPtr& msg)
@@ -171,18 +188,18 @@ int main(int argc, char **argv){
 
     do {
         printf("1 - Optoforce\n"
-               "0 - Exit\n> ");
+                       "0 - Exit\n> ");
 
         inputChar = getchar();
         std::cin.ignore(1000,'\n');
 
         switch(inputChar){
-        case '0':
-            printf("\tExiting program\n");
-            break;
-        default:
-            printf("\tUndefined choice\n");
-            break;
+            case '0':
+                printf("\tExiting program\n");
+                break;
+            default:
+                printf("\tUndefined choice\n");
+                break;
         };
         printf("\n");
     } while (inputChar != '0');
