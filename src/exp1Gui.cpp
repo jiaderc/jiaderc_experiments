@@ -11,10 +11,15 @@
 
 std::vector<std::vector<float>> opto_data_raw[4];
 std::vector<std::vector<float>> extracted_data[4];
+
+
+
+
 int threshold_size = 15;
 int total_sensors = 4;
 int extract_data = 0;
 int allNegative = 0;
+int next = 0;
 float sum = 0;
 
 
@@ -66,7 +71,7 @@ int checkStability(int i){
     for (j=i+1; j<threshold_size; j++) {
         float current = opto_data_raw[0][j][2];
         if (fabs(prev - current) < boundary) {
-            stabilityCount = stabilityCount+1;
+            stabilityCount++;
         }
         else{
             return stabilityCount;
@@ -75,6 +80,26 @@ int checkStability(int i){
     return stabilityCount;
 }
 
+int getStartPos(){
+    int i;
+    for(i=0;i<threshold_size;i++){
+        if(opto_data_raw[0][i][2] >= 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
+void fillTheFirstElements(int startpos){
+    std::vector<float> tmp;
+    int i;
+    for (i=startpos; i<threshold_size; i++) {
+        tmp.push_back(opto_data_raw[0][i][1]);
+        tmp.push_back(opto_data_raw[0][i][2]);
+        tmp.push_back(opto_data_raw[0][i][3]);
+    }
+    extracted_data[0].push_back(tmp);
+}
 //x = 0, y = 1, z = 2
 void isOnGround(){
     if(opto_data_raw[0].size() == threshold_size){
@@ -82,12 +107,12 @@ void isOnGround(){
         int i;
         float prev = opto_data_raw[0][0][2];
         int saveData = 0;
-        int sjekk = 0;
+        int longestSequence = 0;
         for (i=1; i<threshold_size; i++) {
             float current = opto_data_raw[0][i][2];
-            int longestStability = 5;
+            int longestStability = 8;
             if (bothNegative(prev, current)) {
-                if ( (sjekk=checkStability(i)) > longestStability) {
+                if ((longestSequence=checkStability(i)) > longestStability) {
                     saveData = 1;
                     break;
                 }
@@ -101,12 +126,18 @@ void isOnGround(){
             std::cout << "Innsamling av data" << "\n";
             std::cout << "Average: " << (sum/threshold_size) << "\n";
             std::cout << "Max: " << max << "\n";
-            std::cout << "Sequence: " << sjekk << "\n";
+            std::cout << "Sequence: " << longestSequence << "\n";
 
             for (i = 0; i < threshold_size; i++){
                 std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
+            }
 
-            }std::cout << "\n";
+
+            if(int startpos = getStartPos() != -1){
+                fillTheFirstElements(startpos);
+                std::cout << "tar det på neste";
+            }
+            std::cout << "\n";
         }
         clearVectorArray();
         sum = 0;
@@ -144,8 +175,6 @@ void optoforceCallback0(const geometry_msgs::WrenchStamped::ConstPtr& msg)
     sum = sum+msg->wrench.force.z;
     getPoints(0,optoforce_lst);
 }
-
-
 
 void optoforceCallback1(const geometry_msgs::WrenchStamped::ConstPtr& msg)
 {
@@ -187,7 +216,7 @@ int main(int argc, char **argv){
     spinner.start();
 
     do {
-        printf("1 - Optoforce\n"
+        printf("The algorithm is running...\n"
                        "0 - Exit\n> ");
 
         inputChar = getchar();
