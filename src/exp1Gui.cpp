@@ -14,12 +14,14 @@ std::vector<std::vector<float>> extracted_data[4];
 
 
 
-
+//Disse parameterne kan endres
 int threshold_size = 15;
+int longestStability = 8;
 int total_sensors = 4;
+
 int extract_data = 0;
 int allNegative = 0;
-int next = 0;
+int fillFirstData = 0;
 float sum = 0;
 
 
@@ -51,6 +53,20 @@ void clearVectorArray(){
     int i;
     for(i=0;i<4;i++){
         opto_data_raw[i].clear();
+    }
+}
+
+void clearVectorArray2(){
+    int i;
+    for(i=0;i<4;i++){
+        extracted_data[i].clear();
+    }
+}
+
+void emptyAllData(std::vector<std::vector<float>> lst[],int size){
+    int i;
+    for(i=0;i<size;i++){
+        lst[i].clear();
     }
 }
 
@@ -94,9 +110,20 @@ void fillTheFirstElements(int startpos){
     std::vector<float> tmp;
     int i;
     for (i=startpos; i<threshold_size; i++) {
+        tmp.push_back(opto_data_raw[0][i][0]);
         tmp.push_back(opto_data_raw[0][i][1]);
         tmp.push_back(opto_data_raw[0][i][2]);
-        tmp.push_back(opto_data_raw[0][i][3]);
+    }
+    extracted_data[0].push_back(tmp);
+}
+void savePoints(){
+    std::cout << "Save data\n";
+    std::vector<float> tmp;
+    int i;
+    for (i=0; i<threshold_size; i++) {
+        tmp.push_back(opto_data_raw[0][i][0]);
+        tmp.push_back(opto_data_raw[0][i][1]);
+        tmp.push_back(opto_data_raw[0][i][2]);
     }
     extracted_data[0].push_back(tmp);
 }
@@ -110,7 +137,7 @@ void isOnGround(){
         int longestSequence = 0;
         for (i=1; i<threshold_size; i++) {
             float current = opto_data_raw[0][i][2];
-            int longestStability = 8;
+
             if (bothNegative(prev, current)) {
                 if ((longestSequence=checkStability(i)) > longestStability) {
                     saveData = 1;
@@ -122,24 +149,40 @@ void isOnGround(){
             }
         }
         float max = getMax();
+        std::cout << "Innsamling av data" << "\n";
+        std::cout << "Average: " << (sum/threshold_size) << "\n";
+        std::cout << "Max: " << max << "\n";
+        std::cout << "Sequence: " << longestSequence << "\n";
+
         if(saveData){
-            std::cout << "Innsamling av data" << "\n";
-            std::cout << "Average: " << (sum/threshold_size) << "\n";
-            std::cout << "Max: " << max << "\n";
-            std::cout << "Sequence: " << longestSequence << "\n";
 
             for (i = 0; i < threshold_size; i++){
-                std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
+                //std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
             }
 
-
-            if(int startpos = getStartPos() != -1){
+            if(fillFirstData || extract_data){
+                extract_data = 0;
+                fillFirstData = 0;
+                std::cout << "Extracted " << "\n";
+                for (i = 0; i < extracted_data[0].size(); i++){
+                    std::cout << "Z: " << extracted_data[0][i][2] << "\n";
+                }
+                clearVectorArray2();
+            }
+            else if(int startpos = getStartPos() != -1){
                 fillTheFirstElements(startpos);
-                std::cout << "tar det på neste";
+                fillFirstData = 1;
+            }
+            if(!extract_data){
+                extract_data = 1;
             }
             std::cout << "\n";
         }
-        clearVectorArray();
+        else if(extract_data){
+            savePoints();
+        }
+        emptyAllData(opto_data_raw,total_sensors);
+        //clearVectorArray();
         sum = 0;
     }
 }
@@ -218,7 +261,6 @@ int main(int argc, char **argv){
     do {
         printf("The algorithm is running...\n"
                        "0 - Exit\n> ");
-
         inputChar = getchar();
         std::cin.ignore(1000,'\n');
 
@@ -230,6 +272,7 @@ int main(int argc, char **argv){
                 printf("\tUndefined choice\n");
                 break;
         };
+
         printf("\n");
     } while (inputChar != '0');
     return 0;
