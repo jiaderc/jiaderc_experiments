@@ -29,8 +29,6 @@ void MySleep(unsigned long p_uMillisecs){
     usleep(p_uMillisecs * 1000);
 }
 
-
-
 float getMax(){
     float max = opto_data_raw[0][0][2];
     int i;
@@ -182,7 +180,6 @@ void isOnGround(){
             savePoints();
         }
         emptyAllData(opto_data_raw,total_sensors);
-        //clearVectorArray();
         sum = 0;
     }
 }
@@ -257,13 +254,11 @@ int main(int argc, char **argv){
     ros::Subscriber optoforce3 = n.subscribe("optoforce_3", 1000, optoforceCallback3);
     ros::AsyncSpinner spinner(2);
     spinner.start();
-
     do {
         printf("The algorithm is running...\n"
                        "0 - Exit\n> ");
         inputChar = getchar();
         std::cin.ignore(1000,'\n');
-
         switch(inputChar){
             case '0':
                 printf("\tExiting program\n");
@@ -272,7 +267,6 @@ int main(int argc, char **argv){
                 printf("\tUndefined choice\n");
                 break;
         };
-
         printf("\n");
     } while (inputChar != '0');
     return 0;
