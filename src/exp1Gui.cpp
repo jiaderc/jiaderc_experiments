@@ -11,12 +11,16 @@
 
 std::vector<std::vector<float>> opto_data_raw[4];
 std::vector<std::vector<float>> extracted_data[4];
-
+std::vector<std::vector<float>> rawDataS0;
+std::vector<std::vector<float>> interestDataS0;
 
 
 //Disse parameterne kan endres
-int threshold_size = 15;
-int longestStability = 8;
+/*int threshold_size = 15;
+int longestStability = 8;*/
+
+int threshold_size = 20;
+int longestStability = 15;
 int total_sensors = 4;
 
 int extract_data = 0;
@@ -30,42 +34,14 @@ void MySleep(unsigned long p_uMillisecs){
 }
 
 float getMax(){
-    float max = opto_data_raw[0][0][2];
+    float max = rawDataS0.at(0).at(2);
     int i;
-    for (i = 0; i < threshold_size; i++){
-        if(opto_data_raw[0][i][2] > max){
-            max = opto_data_raw[0][i][2];
+    for (i = 0; i < rawDataS0.size(); i++){
+        if(rawDataS0.at(i).at(2) > max){
+            max = rawDataS0.at(i).at(2);
         }
     }
-
-    //std::cout << "Max" << max << "\n";
-    /* if(max > 3){
-         for (i = 0; i < threshold_size; i++){
- //          std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
-         }
-     } */
     return max;
-}
-
-void clearVectorArray(){
-    int i;
-    for(i=0;i<4;i++){
-        opto_data_raw[i].clear();
-    }
-}
-
-void clearVectorArray2(){
-    int i;
-    for(i=0;i<4;i++){
-        extracted_data[i].clear();
-    }
-}
-
-void emptyAllData(std::vector<std::vector<float>> lst[],int size){
-    int i;
-    for(i=0;i<size;i++){
-        lst[i].clear();
-    }
 }
 
 int bothNegative(float prev, float current){
@@ -78,12 +54,12 @@ int bothNegative(float prev, float current){
 //int checkStability(float prev, float current, int i){
 int checkStability(int i){
     float boundary = 0.02;
-    float prev = opto_data_raw[0][i][2];
+    float prev = rawDataS0.at(i).at(2);
     int stabilityCount = 0;
     int j;
 
     for (j=i+1; j<threshold_size; j++) {
-        float current = opto_data_raw[0][j][2];
+        float current = rawDataS0.at(j).at(2);
         if (fabs(prev - current) < boundary) {
             stabilityCount++;
         }
@@ -92,6 +68,32 @@ int checkStability(int i){
         }
     }
     return stabilityCount;
+}
+
+int checkStability2(int i){
+    float boundary = 0.03;
+    int stabilityCount = 0;
+    int j,k;
+
+    int min = -1;
+    for(k=0;k<3;k++) {
+        for (j = i + 1; j < threshold_size - 1; j++) {
+            float current = rawDataS0.at(j).at(k);
+            float next = rawDataS0.at(j + 1).at(k);
+            if (fabs(next - current) < boundary) {
+                stabilityCount++;
+            }
+            else {
+                if(min == -1){
+                    min = stabilityCount;
+                }else if(stabilityCount<min){
+                    min = stabilityCount;
+                }
+                break;
+            }
+        }
+    }
+    return min;
 }
 
 int getStartPos(){
@@ -104,40 +106,48 @@ int getStartPos(){
     return -1;
 }
 
-void fillTheFirstElements(int startpos){
-    std::vector<float> tmp;
+void print_data(){
     int i;
-    for (i=startpos; i<threshold_size; i++) {
-        tmp.push_back(opto_data_raw[0][i][0]);
-        tmp.push_back(opto_data_raw[0][i][1]);
-        tmp.push_back(opto_data_raw[0][i][2]);
-    }
-    extracted_data[0].push_back(tmp);
-}
-void savePoints(){
-    std::cout << "Save data\n";
-    std::vector<float> tmp;
-    int i;
-    for (i=0; i<threshold_size; i++) {
-        tmp.push_back(opto_data_raw[0][i][0]);
-        tmp.push_back(opto_data_raw[0][i][1]);
-        tmp.push_back(opto_data_raw[0][i][2]);
-    }
-    extracted_data[0].push_back(tmp);
-}
-//x = 0, y = 1, z = 2
-void isOnGround(){
-    if(opto_data_raw[0].size() == threshold_size){
+    std::cout << "-----------START------------\n";
+    std::cout << "Str: " << interestDataS0.size() << "\n";
 
+    for(i=0;i<interestDataS0.size();i++){
+        std::cout << interestDataS0.at(i).at(2) << "\n";
+    }
+    std::cout << "-------EEEEENNNND-----------\n";
+
+}
+
+void save_data(){
+    int i;
+    for(i=0;i<rawDataS0.size();i++){
+        interestDataS0.push_back(rawDataS0.at(i));
+    }
+}
+int saveData = 0;
+
+void isOnGround(std::vector<std::vector<float>> rawData){
+    if(rawData.size() == threshold_size){
         int i;
-        float prev = opto_data_raw[0][0][2];
-        int saveData = 0;
-        int longestSequence = 0;
-        for (i=1; i<threshold_size; i++) {
-            float current = opto_data_raw[0][i][2];
+        float prev = rawData.at(0).at(2);
 
+        int longestSequence = 0;
+
+        if(saveData){
+            save_data();
+        }
+
+
+        for (i=1; i<threshold_size; i++) {
+            float current = rawData.at(i).at(2);
             if (bothNegative(prev, current)) {
                 if ((longestSequence=checkStability(i)) > longestStability) {
+                    std::cout << "YEEESS" << "\n";
+
+                    if(saveData){
+                        print_data();
+                        interestDataS0.clear();
+                    }
                     saveData = 1;
                     break;
                 }
@@ -146,102 +156,47 @@ void isOnGround(){
                 }
             }
         }
-        float max = getMax();
-        std::cout << "Innsamling av data" << "\n";
-        std::cout << "Average: " << (sum/threshold_size) << "\n";
-        std::cout << "Max: " << max << "\n";
-        std::cout << "Sequence: " << longestSequence << "\n";
 
-        if(saveData){
 
-            for (i = 0; i < threshold_size; i++){
-                //std::cout << "Z: " << opto_data_raw[0][i][2] << "\n";
-            }
-
-            if(fillFirstData || extract_data){
-                extract_data = 0;
-                fillFirstData = 0;
-                std::cout << "Extracted " << "\n";
-                for (i = 0; i < extracted_data[0].size(); i++){
-                    std::cout << "Z: " << extracted_data[0][i][2] << "\n";
-                }
-                clearVectorArray2();
-            }
-            else if(int startpos = getStartPos() != -1){
-                fillTheFirstElements(startpos);
-                fillFirstData = 1;
-            }
-            if(!extract_data){
-                extract_data = 1;
-            }
-            std::cout << "\n";
-        }
-        else if(extract_data){
-            savePoints();
-        }
-        emptyAllData(opto_data_raw,total_sensors);
+        std::cout << "Max: " << getMax() <<  "\n";
+        rawDataS0.clear();
         sum = 0;
     }
 }
 
-
-
-void getPoints(int sensornr, float opto_lst[3]){
-    std::vector<float> tmp;
-    tmp.push_back(opto_lst[0]);
-    tmp.push_back(opto_lst[1]);
-    tmp.push_back(opto_lst[2]);
-    opto_data_raw[sensornr].push_back(tmp);
-
-/*
-    std::cout << "Sensor" << sensornr << "\n";
-    std::cout << "first " << (sizeof opto_data_raw/ sizeof opto_data_raw[0]) << "\n";
-    std::cout << "second " << opto_data_raw[sensornr].size() << "\n";
-    std::cout << "third" << opto_data_raw[sensornr][0].size() << "\n";
-
-    std::cout << "x:" << opto_data_raw[sensornr][0][0] << "\n";
-    std::cout << "y:" << opto_data_raw[sensornr][0][1] << "\n";
-    std::cout << "z:" << opto_data_raw[sensornr][0][2] << "\n";
-*/
-    isOnGround();
-}
-
 void optoforceCallback0(const geometry_msgs::WrenchStamped::ConstPtr& msg)
 {
-    float optoforce_lst [3];
-    optoforce_lst[0] = msg->wrench.force.x;
-    optoforce_lst[1] = msg->wrench.force.y;
-    optoforce_lst[2] = msg->wrench.force.z;
-    sum = sum+msg->wrench.force.z;
-    getPoints(0,optoforce_lst);
+    std::vector<float> tmp;
+    tmp.push_back(msg->wrench.force.x);
+    tmp.push_back(msg->wrench.force.y);
+    tmp.push_back(msg->wrench.force.z);
+    rawDataS0.push_back(tmp);
+    isOnGround(rawDataS0);
 }
 
-void optoforceCallback1(const geometry_msgs::WrenchStamped::ConstPtr& msg)
-{
+void optoforceCallback1(const geometry_msgs::WrenchStamped::ConstPtr& msg) {
     float optoforce_lst [3];
     optoforce_lst[0] = msg->wrench.force.x;
     optoforce_lst[1] = msg->wrench.force.y;
     optoforce_lst[2] = msg->wrench.force.z;
-    getPoints(1,optoforce_lst);
+   // getPoints(1,optoforce_lst);
 
 }
 
-void optoforceCallback2(const geometry_msgs::WrenchStamped::ConstPtr& msg)
-{
+void optoforceCallback2(const geometry_msgs::WrenchStamped::ConstPtr& msg) {
     float optoforce_lst [3];
     optoforce_lst[0] = msg->wrench.force.x;
     optoforce_lst[1] = msg->wrench.force.y;
     optoforce_lst[2] = msg->wrench.force.z;
-    getPoints(2,optoforce_lst);
+   // getPoints(2,optoforce_lst);
 }
 
-void optoforceCallback3(const geometry_msgs::WrenchStamped::ConstPtr& msg)
-{
+void optoforceCallback3(const geometry_msgs::WrenchStamped::ConstPtr& msg) {
     float optoforce_lst [3];
     optoforce_lst[0] = msg->wrench.force.x;
     optoforce_lst[1] = msg->wrench.force.y;
     optoforce_lst[2] = msg->wrench.force.z;
-    getPoints(3,optoforce_lst);
+    //getPoints(3,optoforce_lst);
 }
 
 int main(int argc, char **argv){
@@ -249,9 +204,9 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "exp1Gui");
     ros::NodeHandle n;
     ros::Subscriber optoforce0 = n.subscribe("optoforce_0", 1000, optoforceCallback0);
-    ros::Subscriber optoforce1 = n.subscribe("optoforce_1", 1000, optoforceCallback1);
-    ros::Subscriber optoforce2 = n.subscribe("optoforce_2", 1000, optoforceCallback2);
-    ros::Subscriber optoforce3 = n.subscribe("optoforce_3", 1000, optoforceCallback3);
+    //ros::Subscriber optoforce1 = n.subscribe("optoforce_1", 1000, optoforceCallback1);
+    //ros::Subscriber optoforce2 = n.subscribe("optoforce_2", 1000, optoforceCallback2);
+    //ros::Subscriber optoforce3 = n.subscribe("optoforce_3", 1000, optoforceCallback3);
     ros::AsyncSpinner spinner(2);
     spinner.start();
     do {
